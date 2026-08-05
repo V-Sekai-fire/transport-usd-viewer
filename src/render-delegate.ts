@@ -31,7 +31,17 @@ class TextureRegistry {
 
     let resourcePath = filename;
     if (filename[0] !== '/') {
-      resourcePath = this.basename + '[' + filename +']';
+      // USD's own usdz packager (UsdUtils.CreateNewUsdzPackage) writes
+      // internal asset references in relative form, './name' or nested
+      // like './tex/name', but stores each zip entry flat, without
+      // leading dot-segments. Looking a texture up by the raw reference
+      // against that flat entry table always misses, and driver.getFile
+      // then reports "Unknown file". The URL API's own relative
+      // resolution normalizes './', repeated './', and '../' the same
+      // way a browser resolves a relative link, so it matches the zip's
+      // own entry names without a one-off regex for each case.
+      const normalized = new URL(filename, 'https://usd-viewer.invalid/').pathname.slice(1);
+      resourcePath = this.basename + '[' + normalized + ']';
     }
 
     let filetype: string;
